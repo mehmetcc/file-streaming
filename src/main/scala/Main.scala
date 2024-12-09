@@ -1,12 +1,12 @@
-import streaming.Configuration
+import streaming.{Configuration, Reader, ReaderImpl}
 import zio._
 
 object Main extends ZIOAppDefault {
-  override def run: ZIO[Environment with ZIOAppArgs with Scope, Any, Any] = program.provide(Configuration.live)
+  override def run: ZIO[Environment with ZIOAppArgs with Scope, Any, Any] =
+    program.provide(Configuration.live, ReaderImpl.live)
 
   private val program = for {
     config <- ZIO.service[Configuration]
-    _      <- ZIO.log(config.intermediaryDirectory)
-    _      <- ZIO.log(config.chunkSize.toString)
+    paths  <- Reader.split(config.inputPath)
   } yield ()
 }
