@@ -1,3 +1,5 @@
+package streaming
+
 import zio._
 import zio.config.magnolia.deriveConfig
 import zio.config.typesafe.TypesafeConfigProvider

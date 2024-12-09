@@ -1,3 +1,4 @@
+import streaming.Configuration
 import zio._
 
 object Main extends ZIOAppDefault {
