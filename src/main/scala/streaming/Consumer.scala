@@ -2,25 +2,31 @@ package streaming
 
 import commons.{FileOps, Parallelism}
 import zio.stream.ZStream
-import zio.{RIO, Schedule, Task, URLayer, ZIO, ZLayer, durationInt}
+import zio.{Promise, RIO, Schedule, Task, UIO, URLayer, ZIO, ZLayer, durationInt}
 
 import scala.language.postfixOps
 
 trait Consumer {
-  def consume(outputPath: String): RIO[Buffer, Unit]
+  def consume(outputPath: String, signal: Promise[Nothing, Unit]): RIO[Buffer, Unit]
 }
 
 object Consumer {
-  def consume(outputPath: String): RIO[Buffer with Consumer, Unit] =
-    ZIO.serviceWithZIO[Consumer](_.consume(outputPath))
+  def consume(outputPath: String, signal: Promise[Nothing, Unit]): RIO[Buffer with Consumer, Unit] =
+    ZIO.serviceWithZIO[Consumer](_.consume(outputPath, signal))
 }
 
 case class ConsumerImpl(buffer: Buffer) extends Consumer {
-  override def consume(outputPath: String): RIO[Buffer, Unit] =
+  override def consume(outputPath: String, signal: Promise[Nothing, Unit]): RIO[Buffer, Unit] =
     ZStream
       .fromSchedule(Schedule.fixed(1 second))
       .mapZIO(_ => flush(outputPath))
+      .takeUntilZIO(_ => isFinished(signal))
       .runDrain
+
+  private def isFinished(signal: Promise[Nothing, Unit]): UIO[Boolean] = for {
+    producerDone <- signal.isDone
+    emptyBuffer  <- buffer.dequeueAll.map(_.isEmpty)
+  } yield producerDone && emptyBuffer
 
   private def flush(outputPath: String): Task[Unit] = for {
     items <- buffer.dequeueAll
@@ -28,7 +34,7 @@ case class ConsumerImpl(buffer: Buffer) extends Consumer {
     _ <- ZIO.when(sorted.nonEmpty) {
            ZIO.logDebug(s"[Consumer] Dequeuing ${sorted.length} items on Thread: ${Parallelism.threadId}") *>
              FileOps
-               .append(outputPath, sorted.toArray)
+               .append(outputPath, sorted.toArray.map(_.toInt))
                .tapBoth(
                  err => ZIO.logError(s"[Flush] Failed to write: ${err.getMessage}"),
                  _ =>

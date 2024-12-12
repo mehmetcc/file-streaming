@@ -17,8 +17,9 @@ object Main extends ZIOAppDefault {
 
   private def pubsub(paths: List[Path]): URIO[Buffer with Consumer with Producer with Configuration, Unit] = for {
     outputPath <- ZIO.serviceWith[Configuration](_.outputPath)
-    producer   <- Producer.produce(paths).fork
-    consumer   <- Consumer.consume(outputPath).fork
+    signal     <- Promise.make[Nothing, Unit]
+    producer   <- Producer.produce(paths).ensuring(signal.succeed(())).fork
+    consumer   <- Consumer.consume(outputPath, signal).fork
   } yield ()
 
   private val program = for {
