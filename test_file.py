@@ -48,7 +48,7 @@ def compare_line_count(file1: str, file2: str) -> str:
 
 
 if __name__ == "__main__":
-    input_path = "test.txt"
+    input_path = "input.txt"
     output_path = "output.txt"
     is_sorted(output_path)
     compare_line_count(input_path, output_path)

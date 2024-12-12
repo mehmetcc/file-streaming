@@ -35,6 +35,7 @@ case class ReaderImpl(configuration: Configuration) extends Reader {
     ints  <- parse(chunk)
     sorted = ints.sorted
     path  <- FileOps.write(path = s"${configuration.intermediaryDirectory}/tmp_$index", content = sorted)
+    _     <- ZIO.logInfo(s"[Reader] Writing to ${path.toString}")
   } yield path
 
   private def parse(chunk: Chunk[Byte]): Task[Array[Int]] = for {
