@@ -8,7 +8,7 @@ def write_random(target_size_in_gb: float, filename: str = "test.txt") -> None:
 
     with(open(filename, "w")) as file:
         while size_written < target_size:
-            batch = "\n".join(str(random.randint(1, 1_000)) for _ in range(buffer_size))
+            batch = "\n".join(str(random.randint(1, 1_000_000)) for _ in range(buffer_size))
             batch += "\n"
             file.write(batch)
             size_written += len(batch)

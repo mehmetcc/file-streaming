@@ -30,11 +30,11 @@ case class ConsumerImpl(buffer: Buffer) extends Consumer {
 
   private def flush(outputPath: String): Task[Unit] = for {
     items <- buffer.dequeueAll
-    sorted = items.sorted
+    sorted = items.map(_.toInt).sorted
     _ <- ZIO.when(sorted.nonEmpty) {
            ZIO.logDebug(s"[Consumer] Dequeuing ${sorted.length} items on Thread: ${Parallelism.threadId}") *>
              FileOps
-               .append(outputPath, sorted.toArray.map(_.toInt))
+               .append(outputPath, sorted.toArray)
                .tapBoth(
                  err => ZIO.logError(s"[Flush] Failed to write: ${err.getMessage}"),
                  _ =>

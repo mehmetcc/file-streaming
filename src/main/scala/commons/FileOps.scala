@@ -22,7 +22,7 @@ object FileOps {
   def append(path: Path, content: Array[Int]): Task[Path] = ZIO.attempt {
     Files.write(
       path,
-      content.mkString("\n").getBytes(StandardCharsets.UTF_8),
+      content.mkString("\n").appended('\n').getBytes(StandardCharsets.UTF_8),
       StandardOpenOption.CREATE,
       StandardOpenOption.APPEND
     )
