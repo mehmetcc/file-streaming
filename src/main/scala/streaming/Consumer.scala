@@ -1,6 +1,6 @@
 package streaming
 
-import commons.FileOps
+import commons.{FileOps, Parallelism}
 import zio.stream.ZStream
 import zio.{RIO, Schedule, Task, URLayer, ZIO, ZLayer, durationInt}
 
@@ -26,12 +26,15 @@ case class ConsumerImpl(buffer: Buffer) extends Consumer {
     items <- buffer.dequeueAll
     sorted = items.sorted
     _ <- ZIO.when(sorted.nonEmpty) {
-           ZIO.logDebug(s"[Consumer] Dequeuing ${sorted.length} items") *>
+           ZIO.logDebug(s"[Consumer] Dequeuing ${sorted.length} items on Thread: ${Parallelism.threadId}") *>
              FileOps
                .append(outputPath, sorted.toArray)
                .tapBoth(
                  err => ZIO.logError(s"[Flush] Failed to write: ${err.getMessage}"),
-                 _ => ZIO.logInfo(s"[Flush] Successfully flushed ${sorted.length} items")
+                 _ =>
+                   ZIO.logInfo(
+                     s"[Flush] Successfully flushed ${sorted.length} items on Thread: ${Parallelism.threadId}"
+                   )
                )
          }
   } yield ()
